@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CalendarDays, Plus } from 'lucide-react';
 import { useAppStore } from '../store';
 import { addDays, formatDateIST, istDateString } from '../lib/time';
@@ -8,6 +8,7 @@ export function Plan({ onAdd }: { onAdd: (date: string) => void }) {
   const state = useAppStore(); const today = istDateString(Date.now());
   const days = Array.from({ length: 8 }, (_, index) => addDays(today, index));
   const [selectedDay, setSelectedDay] = useState(today); const [selectedTask, setSelectedTask] = useState<string | null>(null);
+  useEffect(() => setSelectedDay(day => day < today || day > addDays(today, 7) ? today : day), [today]);
   const tasks = state.tasks.filter(task => task.scheduledFor === selectedDay && (task.status === 'scheduled' || (selectedDay === today && task.status === 'active')));
   const opened = state.tasks.find(task => task.id === selectedTask);
   return <>

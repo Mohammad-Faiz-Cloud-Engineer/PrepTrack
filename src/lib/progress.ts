@@ -1,6 +1,6 @@
 import type { AppState, ProgressRecord, Task, TaskType } from '../types';
 import { progressKey } from '../types';
-import { istDateString } from './time';
+import { istDateString, istMidnightMs } from './time';
 
 export type Unit = { id: string; chapterId: string; topicId: string | null; name: string };
 export type TypeCount = { done: number; total: number };
@@ -38,6 +38,23 @@ export function recordsForTask(state: AppState, task: Task, at: number): Record<
 
 export function removeTaskRecords(records: Record<string, ProgressRecord>, taskId: string): Record<string, ProgressRecord> {
   return Object.fromEntries(Object.entries(records).filter(([, record]) => record.taskId !== taskId));
+}
+
+export function updatePastRecords(records: Record<string, ProgressRecord>, unitIds: string[], types: TaskType[], date: string, checked: boolean, now: number): Record<string, ProgressRecord> {
+  const completedAt = istMidnightMs(date);
+  if (checked && (!Number.isFinite(completedAt) || istDateString(completedAt) !== date || date > istDateString(now))) return records;
+  let next = records;
+  for (const unitId of unitIds) for (const type of types) {
+    const key = progressKey(unitId, type); const existing = next[key];
+    if (checked && !existing) {
+      if (next === records) next = { ...records };
+      next[key] = { unitId, type, completedOn: date, completedAt, source: 'past' };
+    } else if (!checked && existing?.source === 'past' && existing.completedOn === date) {
+      if (next === records) next = { ...records };
+      delete next[key];
+    }
+  }
+  return next;
 }
 
 export function getProgress(state: AppState, goalId: string, subjectId?: string, chapterId?: string): ProgressSummary {

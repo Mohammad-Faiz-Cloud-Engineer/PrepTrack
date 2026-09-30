@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, ChevronRight, Circle, X } from 'lucide-react';
 import type { AppState, ProgressRecord, Task, TaskType } from '../types';
 import { formatDateIST, formatIST } from '../lib/time';
@@ -6,10 +6,23 @@ import { formatDateIST, formatIST } from '../lib/time';
 const TASK_ICONS: Record<TaskType, string> = { Lecture: 'L', Practice: 'P', Revision: 'R' };
 
 export function Modal({ title, onClose, children, sheet = false }: { title: string; onClose: () => void; children: React.ReactNode; sheet?: boolean }) {
+  const panel = useRef<HTMLElement>(null); const closeRef = useRef(onClose);
+  useEffect(() => { closeRef.current = onClose; }, [onClose]);
   useEffect(() => {
-    const close = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', close); return () => window.removeEventListener('keydown', close);
-  }, [onClose]);
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusable = () => [...(panel.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? [])];
+    if (!panel.current?.contains(document.activeElement)) (panel.current?.querySelector<HTMLElement>('[autofocus]') ?? focusable()[0])?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { closeRef.current(); return; }
+      if (event.key !== 'Tab') return;
+      const items = focusable(); if (!items.length) return;
+      const first = items[0]; const last = items[items.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !panel.current?.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && (document.activeElement === last || !panel.current?.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => { window.removeEventListener('keydown', onKeyDown); previous?.focus(); };
+  }, []);
   return <div className={`modal-backdrop ${sheet ? 'sheet-backdrop' : ''}`} onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
     <section className={`modal-panel ${sheet ? 'bottom-sheet' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
       <header className="modal-head"><h2>{title}</h2><button className="icon-button" aria-label="Close" onClick={onClose}><X size={19} /></button></header>
@@ -21,7 +34,7 @@ export function Modal({ title, onClose, children, sheet = false }: { title: stri
 export function TaskPath({ state, task, compact = false }: { state: AppState; task: Task; compact?: boolean }) {
   const names = [state.goals.find(item => item.id === task.goalId)?.name, state.subjects.find(item => item.id === task.subjectId)?.name,
     state.chapters.find(item => item.id === task.chapterId)?.name, task.topicId ? state.topics.find(item => item.id === task.topicId)?.name : null].filter(Boolean);
-  return <div className={`task-path ${compact ? 'compact' : ''}`}>{names.map((name, index) => <span key={`${name}-${index}`}>{index > 0 && <ChevronRight size={12} aria-hidden="true" />}{name}</span>)}</div>;
+  return <span className={`task-path ${compact ? 'compact' : ''}`}>{names.map((name, index) => <span key={`${name}-${index}`}>{index > 0 && <ChevronRight size={12} aria-hidden="true" />}{name}</span>)}</span>;
 }
 
 function countdown(ms: number) {
@@ -35,15 +48,19 @@ export function TaskCard({ state, task, onOpen, onComplete, onUndo, onMove, onDe
   onMove?: () => void; onDelete?: () => void; planned?: boolean;
 }) {
   const [now, setNow] = useState(Date.now());
-  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
+  useEffect(() => {
+    if (task.status !== 'active') return;
+    setNow(Date.now()); const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [task.status]);
   const remaining = task.deadlineAt === null ? 0 : task.deadlineAt - now;
   const urgency = remaining < 60 * 60 * 1000 ? 'urgent' : remaining < 4 * 60 * 60 * 1000 ? 'soon' : '';
-  return <article className={`task-card ${task.status === 'completed' ? 'completed-card' : ''}`} onClick={onOpen} tabIndex={0} onKeyDown={event => { if (event.key === 'Enter') onOpen(); }}>
-    <div className="task-card-main">
-      <div className="task-title-row"><span className={`type-chip type-${task.type.toLowerCase()}`}>{task.type}</span>{task.fromBacklog && <span className="backlog-chip">Backlog</span>}</div>
+  return <article className={`task-card ${task.status === 'completed' ? 'completed-card' : ''}`} onClick={event => { if (event.target === event.currentTarget) onOpen(); }}>
+    <button type="button" className="task-card-main" onClick={onOpen} aria-haspopup="dialog">
+      <span className="task-title-row"><span className={`type-chip type-${task.type.toLowerCase()}`}>{task.type}</span>{task.fromBacklog && <span className="backlog-chip">Backlog</span>}</span>
       <TaskPath state={state} task={task} compact />
-      {task.note && <p className="task-note">{task.note}</p>}
-    </div>
+      {task.note && <span className="task-note">{task.note}</span>}
+    </button>
     <div className="task-card-actions">
       {task.status === 'active' && <div className={`countdown ${urgency}`} aria-hidden="true"><span className="countdown-label">{planned ? 'Starts today' : 'Time left'}</span><strong>{planned ? '' : countdown(remaining)}</strong></div>}
       {task.status === 'scheduled' && <div className="countdown"><span className="countdown-label">Planned</span><strong>{formatDateIST(task.scheduledFor, { day: 'numeric', month: 'short' })}</strong></div>}

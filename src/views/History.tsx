@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import { BookOpenCheck, History as HistoryIcon } from 'lucide-react';
+import { BookOpenCheck, Clock3, History as HistoryIcon } from 'lucide-react';
 import { useAppStore } from '../store';
 import { formatDateIST, formatIST, istDateString } from '../lib/time';
 import { SectionHeading } from '../components/shared';
 
-export function History() {
+export function History({ onPastStudy }: { onPastStudy: () => void }) {
   const state = useAppStore(); const [goal, setGoal] = useState('all');
   const events = useMemo(() => {
     const taskEvents = state.tasks.filter(task => task.status === 'completed' && task.completedAt !== null && (goal === 'all' || task.goalId === goal)).map(task => ({
@@ -24,7 +24,7 @@ export function History() {
   return <>
     <SectionHeading eyebrow="LOOK BACK WITH PRIDE" title="History" description="Your completed tasks and past study logs, in IST." />
     {events.length > 0 && state.goals.length > 1 && <div className="history-filter"><span>Showing</span><select className="select-compact" aria-label="Filter history by goal" value={goal} onChange={event => setGoal(event.target.value)}><option value="all">All goals</option>{state.goals.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div>}
-    {!events.length ? <div className="empty-state page-empty"><span className="empty-icon"><HistoryIcon size={23} /></span><h3>Your history will grow here</h3><p>Complete a task or log a past study session to keep a record of your work.</p></div> : Object.entries(grouped).sort(([a], [b]) => b.localeCompare(a)).map(([date, items]) => <section className="history-day" key={date}><div className="history-date"><span className="date-mark" /><div><h2>{formatDateIST(date, { weekday: 'long', day: 'numeric', month: 'long' })}</h2><small>{items.length} {items.length === 1 ? 'entry' : 'entries'}</small></div></div>
+    {!events.length ? <div className="empty-state page-empty"><span className="empty-icon"><HistoryIcon size={23} /></span><h3>Your history will grow here</h3><p>Complete a task or log a past study session to keep a record of your work.</p><button className="button button-primary" onClick={onPastStudy}><Clock3 size={16} /> Log past study</button></div> : Object.entries(grouped).sort(([a], [b]) => b.localeCompare(a)).map(([date, items]) => <section className="history-day" key={date}><div className="history-date"><span className="date-mark" /><div><h2>{formatDateIST(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</h2><small>{items.length} {items.length === 1 ? 'entry' : 'entries'}</small></div></div>
       <div className="history-rows">{items.map(event => {
         const goalName = state.goals.find(item => item.id === event.goalId)?.name ?? 'Removed goal';
         const subjectName = state.subjects.find(item => item.id === event.subjectId)?.name ?? 'Removed subject';

@@ -1,6 +1,6 @@
 # PrepTrack
 
-[![Build and test](https://github.com/OWNER/REPOSITORY/actions/workflows/build-test.yml/badge.svg)](https://github.com/OWNER/REPOSITORY/actions/workflows/build-test.yml)
+[![Build and test](https://github.com/Mohammad-Faiz-Cloud-Engineer/PrepTrack/actions/workflows/build-test.yml/badge.svg)](https://github.com/Mohammad-Faiz-Cloud-Engineer/PrepTrack/actions/workflows/build-test.yml)
 
 PrepTrack is an offline-first preparation tracker. All syllabus, tasks and progress stay in this browser; there is no account or backend.
 
@@ -24,6 +24,7 @@ To deploy, publish the generated `dist/` directory to any static HTTPS host with
 - Deleting a syllabus item also deletes its descendants, related tasks and progress. The app confirms this first.
 - Bulk paste treats any line indented by two or more spaces as a topic of the most recent chapter line. A topic line before a chapter is ignored.
 - Duplicate warnings use the browser's confirmation dialog and compare open tasks with the same type in the same chapter; a whole-chapter task overlaps its topics.
+- Backup imports are limited to 20 MB to avoid freezing the browser while parsing a local file.
 
 ## Storage and time
 

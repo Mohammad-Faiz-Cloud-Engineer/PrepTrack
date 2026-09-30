@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { AppState, BacklogSource, EntityKind, Task, TaskType } from './types';
-import { ALL_TYPES, progressKey } from './types';
+import { ALL_TYPES } from './types';
 import { reconcile } from './lib/reconcile';
 import { migrateState } from './lib/io';
-import { DAY_MS, isPlanDateAllowed, istDateString, istMidnightMs } from './lib/time';
-import { recordsForTask, removeTaskRecords } from './lib/progress';
+import { DAY_MS, isPlanDateAllowed, istDateString } from './lib/time';
+import { recordsForTask, removeTaskRecords, updatePastRecords } from './lib/progress';
 
 type TaskDraft = Pick<Task, 'goalId' | 'subjectId' | 'chapterId' | 'topicId' | 'type' | 'scheduledFor'> & { note?: string };
 type Store = AppState & {
@@ -16,7 +16,7 @@ type Store = AppState & {
   deleteEntity: (kind: EntityKind, id: string) => void; setTrackedTypes: (goalId: string, types: TaskType[]) => void;
   addTask: (draft: TaskDraft, now?: number, source?: BacklogSource) => void; completeTask: (id: string, now?: number) => void;
   undoTask: (id: string) => void; moveBacklogToToday: (id: string, now?: number) => void; deleteTask: (id: string) => void;
-  setPastProgress: (unitId: string, type: TaskType, date: string, checked: boolean) => void;
+  setPastProgress: (unitIds: string[], types: TaskType[], date: string, checked: boolean) => void;
   setLastUsed: (goalId: string, subjectId: string, chapterId: string) => void; markExported: (now?: number) => void;
   replaceData: (data: AppState) => void;
 };
@@ -41,14 +41,19 @@ export const useAppStore = create<Store>()(persist((set) => ({
   bulkAdd: (subjectId, text) => {
     const lines = text.split(/\r?\n/).filter(line => line.trim()); let chapterId: string | null = null; let added = 0;
     set(state => {
+      if (!state.subjects.some(item => item.id === subjectId)) return {};
       const chapters = [...state.chapters]; const topics = [...state.topics];
+      let chapterOrder = chapters.filter(item => item.subjectId === subjectId).length;
+      const topicOrders = new Map<string, number>();
+      for (const topic of topics) topicOrders.set(topic.chapterId, (topicOrders.get(topic.chapterId) ?? 0) + 1);
       for (const line of lines) {
         if (/^\s{2,}/.test(line)) {
           if (!chapterId) continue;
-          topics.push({ id: newId(), chapterId, name: line.trim(), order: topics.filter(item => item.chapterId === chapterId).length });
+          const order = topicOrders.get(chapterId) ?? 0;
+          topics.push({ id: newId(), chapterId, name: line.trim(), order }); topicOrders.set(chapterId, order + 1);
         } else {
           chapterId = newId();
-          chapters.push({ id: chapterId, subjectId, name: line.trim(), order: chapters.filter(item => item.subjectId === subjectId).length });
+          chapters.push({ id: chapterId, subjectId, name: line.trim(), order: chapterOrder++ });
         }
         added++;
       }
@@ -79,8 +84,12 @@ export const useAppStore = create<Store>()(persist((set) => ({
   setTrackedTypes: (goalId, types) => set(state => ({ goals: state.goals.map(goal => goal.id === goalId ? { ...goal, trackedTypes: types.length ? types : goal.trackedTypes } : goal) })),
   addTask: (draft, now = Date.now(), source) => set(state => {
     const today = istDateString(now);
+    const subject = state.subjects.find(item => item.id === draft.subjectId);
+    const chapter = state.chapters.find(item => item.id === draft.chapterId);
+    const topic = draft.topicId ? state.topics.find(item => item.id === draft.topicId) : null;
+    if (!subject || subject.goalId !== draft.goalId || !chapter || chapter.subjectId !== draft.subjectId || (draft.topicId && topic?.chapterId !== draft.chapterId)) throw new Error('Choose a valid goal, subject and chapter.');
     if (!state.goals.find(goal => goal.id === draft.goalId)?.trackedTypes.includes(draft.type)) throw new Error('This task type is not tracked for the selected goal.');
-    if (source !== 'manual' && draft.scheduledFor !== today && !isPlanDateAllowed(today, draft.scheduledFor)) throw new Error('Choose today or one of the next seven days.');
+    if (source === 'manual' ? draft.scheduledFor !== today : draft.scheduledFor !== today && !isPlanDateAllowed(today, draft.scheduledFor)) throw new Error('Choose today or one of the next seven days.');
     const active = source !== 'manual' && draft.scheduledFor === today;
     const task: Task = {
       ...draft, id: newId(), note: draft.note?.trim() || undefined,
@@ -101,11 +110,9 @@ export const useAppStore = create<Store>()(persist((set) => ({
   })),
   moveBacklogToToday: (id, now = Date.now()) => set(state => ({ tasks: state.tasks.map(task => task.id === id && task.status === 'backlog' ? { ...task, status: 'active', fromBacklog: true, activatedAt: now, deadlineAt: now + DAY_MS } : task) })),
   deleteTask: id => set(state => ({ tasks: state.tasks.filter(task => task.id !== id), progressRecords: removeTaskRecords(state.progressRecords, id) })),
-  setPastProgress: (unitId, type, date, checked) => set(state => {
-    const key = progressKey(unitId, type); const existing = state.progressRecords[key];
-    if (checked && !existing) return { progressRecords: { ...state.progressRecords, [key]: { unitId, type, completedOn: date, completedAt: istMidnightMs(date), source: 'past' } } };
-    if (!checked && existing?.source === 'past') { const progressRecords = { ...state.progressRecords }; delete progressRecords[key]; return { progressRecords }; }
-    return {};
+  setPastProgress: (unitIds, types, date, checked) => set(state => {
+    const progressRecords = updatePastRecords(state.progressRecords, unitIds, types, date, checked, Date.now());
+    return progressRecords === state.progressRecords ? state : { progressRecords };
   }),
   setLastUsed: (goalId, subjectId, chapterId) => set({ lastUsedGoalId: goalId, lastUsedSubjectId: subjectId, lastUsedChapterId: chapterId }),
   markExported: (now = Date.now()) => set({ lastExportAt: now }),

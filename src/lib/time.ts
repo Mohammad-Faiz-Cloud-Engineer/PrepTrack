@@ -16,8 +16,14 @@ export function addDays(dateString: string, amount: number): string {
   return date.toISOString().slice(0, 10);
 }
 
+function isCalendarDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const ms = istMidnightMs(value);
+  return Number.isFinite(ms) && istDateString(ms) === value;
+}
+
 export function isPlanDateAllowed(today: string, candidate: string): boolean {
-  return candidate > today && candidate <= addDays(today, 7);
+  return isCalendarDate(today) && isCalendarDate(candidate) && candidate > today && candidate <= addDays(today, 7);
 }
 
 export function formatIST(ms: number): string {

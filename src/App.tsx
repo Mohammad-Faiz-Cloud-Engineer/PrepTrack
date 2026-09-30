@@ -86,9 +86,9 @@ export default function App() {
         {view === 'Plan' && <Plan onAdd={date => openComposer(date)} />}
         {view === 'Progress' && <Progress onSyllabus={() => go('Syllabus')} />}
         {view === 'Backlog' && <Backlog onAdd={() => setCompose({ mode: 'manual' })} />}
-        {view === 'History' && <HistoryView />}
+        {view === 'History' && <HistoryView onPastStudy={() => go('Past study')} />}
         {view === 'Syllabus' && <Syllabus />}
-        {view === 'Past study' && <PastStudy />}
+        {view === 'Past study' && <PastStudy onSyllabus={() => go('Syllabus')} />}
         {view === 'Settings' && <Settings theme={theme} setTheme={setTheme} />}
         {view === 'How to use' && <HowToUse go={go} onAdd={() => openComposer()} />}
         {view === 'More' && <><h1 className="more-title">More</h1><More go={go} theme={theme} setTheme={setTheme} /></>}
@@ -98,6 +98,6 @@ export default function App() {
     <nav className="bottom-nav" aria-label="Mobile navigation">{[
       ...navItems.slice(0, 4), { id: 'More', icon: MoreHorizontal },
     ].map(({ id, icon: Icon }) => <button key={id} className={view === id || (id === 'More' && ['History', 'Syllabus', 'Past study', 'Settings', 'How to use'].includes(view)) ? 'active' : ''} onClick={() => go(id as View)}><Icon size={19} /><span>{id === 'Backlog' ? 'Backlog' : id}</span></button>)}</nav>
-    {compose && <TaskComposer mode={compose.mode} date={compose.date} onClose={() => setCompose(null)} />}
+    {compose && <TaskComposer mode={compose.mode} date={compose.date} onClose={() => setCompose(null)} onSyllabus={() => { setCompose(null); go('Syllabus'); }} />}
   </div>;
 }

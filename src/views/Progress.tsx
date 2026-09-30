@@ -32,7 +32,7 @@ export function Progress({ onSyllabus }: { onSyllabus: () => void }) {
       const subjects = state.subjects.filter(subject => subject.goalId === goal.id).sort((a, b) => a.order - b.order);
       return <article className="goal-progress-card" key={goal.id} style={{ '--accent': accent } as React.CSSProperties}>
         <div className="goal-progress-top"><Ring percent={summary.percentDone} accent={accent} /><div className="goal-progress-copy"><p className="eyebrow">WHOLE SYLLABUS</p><h2>{goal.name}</h2><p className="progress-raw"><strong>{summary.done} of {summary.total} done</strong><span>{summary.remaining} remaining</span></p><p className="progress-pct">{summary.percentDone}% done <span>·</span> {summary.percentRemaining}% remaining</p></div></div>
-        <div className="goal-progress-bottom"><p className="fully-done"><CircleCheck size={16} />{summary.fullyDone} of {summary.units} topics fully done</p>
+        <div className="goal-progress-bottom"><p className="fully-done"><CircleCheck size={16} />{summary.fullyDone} of {summary.units} units fully done</p>
           <ScopeBars summary={summary} types={goal.trackedTypes} accent={accent} />
         </div>
         {subjects.length ? <div className="subject-progress-list"><h3>By subject</h3>{subjects.map(subject => {
@@ -49,7 +49,7 @@ export function Progress({ onSyllabus }: { onSyllabus: () => void }) {
               return <div className="chapter-progress" key={chapter.id}><button className="chapter-progress-head" onClick={() => toggle(key)} aria-expanded={chapterOpen}><span>{chapterOpen ? <ChevronDown size={15} /> : <ChevronRight size={15} />}</span><span>{chapter.name}</span><small>{chapterSummary.percentDone}% done · {chapterSummary.percentRemaining}% remaining</small></button>
                 <p className="chapter-raw-count">{chapterSummary.done} of {chapterSummary.total} done · {chapterSummary.remaining} remaining</p>
                 <ScopeBars summary={chapterSummary} types={goal.trackedTypes} accent={accent} compact />
-                {chapterOpen && <div className="unit-list">{units.map(unit => <div className="unit-progress-row" key={unit.id}><span className="unit-name">{unit.name}</span><div className="unit-marks">{goal.trackedTypes.map(type => { const record = state.progressRecords[progressKey(unit.id, type)]; return <span key={type}><TypeMark record={record} label={type} />{record && <small>{formatDateIST(record.completedOn, { day: 'numeric', month: 'short' })}</small>}</span>; })}</div></div>)}</div>}
+                {chapterOpen && <div className="unit-list">{units.map(unit => <div className="unit-progress-row" key={unit.id}><span className="unit-name">{unit.name}</span><div className="unit-marks">{goal.trackedTypes.map(type => { const record = state.progressRecords[progressKey(unit.id, type)]; return <span key={type}><TypeMark record={record} label={type} />{record && <small>{formatDateIST(record.completedOn, { day: 'numeric', month: 'short', year: 'numeric' })}</small>}</span>; })}</div></div>)}</div>}
               </div>;
             })}</div>}
           </div>;

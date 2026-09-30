@@ -1,9 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { AppState, Task } from '../types';
-import { addDays, istDateString, istMidnightMs, isPlanDateAllowed } from './time';
+import type { AppState, ProgressRecord, Task } from '../types';
+import { addDays, DAY_MS, istDateString, istMidnightMs, isPlanDateAllowed } from './time';
 import { reconcile } from './reconcile';
-import { getProgress, recordsForTask, removeTaskRecords, unitsForChapter } from './progress';
+import { getProgress, recordsForTask, removeTaskRecords, unitsForChapter, updatePastRecords } from './progress';
 import { resolveTheme } from './theme';
+import { validateImport } from './io';
 
 beforeAll(() => { process.env.TZ = 'America/New_York'; });
 
@@ -38,6 +39,8 @@ describe('IST time and planning', () => {
     expect(isPlanDateAllowed(today, '2026-03-11')).toBe(true);
     expect(isPlanDateAllowed(today, '2026-03-17')).toBe(true);
     expect(isPlanDateAllowed(today, '2026-03-18')).toBe(false);
+    expect(isPlanDateAllowed(today, '2026-03-11x')).toBe(false);
+    expect(isPlanDateAllowed(today, '2026-02-30')).toBe(false);
   });
 });
 
@@ -97,6 +100,43 @@ describe('progress', () => {
     const undone = removeTaskRecords(withPast, 'chapter-task');
     expect(undone['t1:Practice']).toBeUndefined();
     expect(undone['empty:Lecture'].source).toBe('past');
+  });
+
+  it('batches past logs, rejects invalid/future dates and only removes the selected date', () => {
+    const now = Date.parse('2026-03-10T12:00:00+05:30');
+    const records: Record<string, ProgressRecord> = { 't1:Lecture': { unitId: 't1', type: 'Lecture', completedOn: '2026-03-09', completedAt: istMidnightMs('2026-03-09'), source: 'past' } };
+    expect(updatePastRecords(records, ['t1'], ['Lecture'], '2026-03-10', false, now)).toBe(records);
+    expect(updatePastRecords(records, ['t2', 'empty'], ['Practice', 'Revision'], '', true, now)).toBe(records);
+    expect(updatePastRecords(records, ['t2'], ['Practice'], '2026-03-11', true, now)).toBe(records);
+    const added = updatePastRecords(records, ['t1', 't2'], ['Lecture', 'Practice'], '2026-03-10', true, now);
+    expect(Object.keys(added)).toHaveLength(4);
+    expect(added['t1:Lecture'].completedOn).toBe('2026-03-09');
+    expect(records['t2:Practice']).toBeUndefined();
+    expect(updatePastRecords(added, ['t1'], ['Lecture'], '2026-03-09', false, now)['t1:Lecture']).toBeUndefined();
+  });
+});
+
+describe('backup validation', () => {
+  it('accepts a valid app state and rejects reused IDs and impossible task relationships', () => {
+    expect(validateImport(base()).schemaVersion).toBe(1);
+    const automatic = base(); automatic.tasks = [task({ status: 'backlog', activatedAt: 0, deadlineAt: 86400000, backlogAt: 86400000, backlogSource: 'auto' })];
+    expect(() => validateImport(automatic)).not.toThrow();
+    const completedAt = Date.parse('2026-03-10T10:15:00+05:30');
+    const completed = base(); completed.tasks = [task({ id: 'done', topicId: 't1', status: 'completed', deadlineAt: DAY_MS, completedAt })];
+    completed.progressRecords = { 't1:Practice': { unitId: 't1', type: 'Practice', completedOn: istDateString(completedAt), completedAt, source: 'task', taskId: 'done' } };
+    expect(() => validateImport(completed)).not.toThrow();
+    completed.progressRecords['t2:Practice'] = { ...completed.progressRecords['t1:Practice'], unitId: 't2' };
+    expect(() => validateImport(completed)).toThrow(/invalid progress record/);
+    const reused = base(); reused.topics[0].id = 's';
+    expect(() => validateImport(reused)).toThrow(/reuses an ID/);
+    const broken = base();
+    broken.tasks = [task({ id: 'invalid', activatedAt: 0, deadlineAt: 86400000, topicId: 'missing' })];
+    expect(() => validateImport(broken)).toThrow(/invalid task/);
+  });
+
+  it('rejects malformed JSON shapes without throwing an implementation error', () => {
+    expect(() => validateImport({ schemaVersion: 1, goals: [null], subjects: [], chapters: [], topics: [], tasks: [], progressRecords: {}, lastSeenAt: 0, lastExportAt: null })).toThrow(/invalid IDs/);
+    expect(() => validateImport(null)).toThrow(/not a PrepTrack backup/);
   });
 });
 
