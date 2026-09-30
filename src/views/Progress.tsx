@@ -21,12 +21,12 @@ function ScopeBars({ summary, types, accent, compact = false }: { summary: Retur
   return <div className={`scope-type-bars ${compact ? 'compact' : ''}`}>{types.map(type => <div className="type-bar-row" key={type}><span>{type}</span><ProgressMeter percent={summary.byType[type].total ? Math.round(summary.byType[type].done * 100 / summary.byType[type].total) : 0} label={`${type} progress`} accent={accent} /><small>{summary.byType[type].done}/{summary.byType[type].total}</small></div>)}</div>;
 }
 
-export function Progress() {
+export function Progress({ onSyllabus }: { onSyllabus: () => void }) {
   const state = useAppStore(); const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const toggle = (id: string) => setExpanded(value => { const next = new Set(value); next.has(id) ? next.delete(id) : next.add(id); return next; });
   return <>
     <SectionHeading eyebrow="SEE YOUR MOMENTUM" title="Progress" description="Small, steady marks across the whole syllabus." />
-    {!state.goals.length ? <div className="empty-state page-empty"><h3>Your progress starts with a syllabus</h3><p>Add a goal and its topics to see a clear picture of what is done.</p></div> : <div className="goal-progress-list">{state.goals.map(goal => {
+    {!state.goals.length ? <div className="empty-state page-empty progress-empty"><h3>Your progress starts with a syllabus</h3><p>Add a goal and its topics to see a clear picture of what is done.</p><button className="button button-primary" onClick={onSyllabus}>Set up a goal</button></div> : <div className="goal-progress-list">{state.goals.map(goal => {
       const accent = ACCENT_COLORS[goal.colorId]?.[document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'] ?? ACCENT_COLORS[0].light;
       const summary = getProgress(state, goal.id);
       const subjects = state.subjects.filter(subject => subject.goalId === goal.id).sort((a, b) => a.order - b.order);

@@ -18,7 +18,7 @@ export function Plan({ onAdd }: { onAdd: (date: string) => void }) {
         <span>{index === 0 ? 'Today' : formatDateIST(day, { weekday: 'short' })}</span><strong>{formatDateIST(day, { day: 'numeric', month: 'short' })}</strong><small>{count} {count === 1 ? 'task' : 'tasks'}</small>
       </button>;
     })}</div>
-    <div className="plan-day-heading"><div><p className="eyebrow">PLANNED STUDY</p><h2>{formatDateIST(selectedDay, { weekday: 'long', day: 'numeric', month: 'long' })}</h2></div><button className="button button-soft" onClick={() => onAdd(selectedDay)}><Plus size={16} /> Add task</button></div>
+    <div className="plan-day-heading"><div><p className="eyebrow">PLANNED STUDY</p><h2>{formatDateIST(selectedDay, { weekday: 'long', day: 'numeric', month: 'long' })}</h2></div>{tasks.length > 0 && <button className="button button-soft" onClick={() => onAdd(selectedDay)}><Plus size={16} /> Add task</button>}</div>
     {tasks.length ? <div className="task-list">{tasks.map(task => <TaskCard key={task.id} state={state} task={task} planned={selectedDay !== today} onComplete={selectedDay === today ? () => state.completeTask(task.id) : undefined} onOpen={() => setSelectedTask(task.id)} />)}</div> : <EmptyState icon={<CalendarDays size={23} />} title="Nothing planned yet" description="Add one session to give this day a little structure." action={<button className="button button-primary" onClick={() => onAdd(selectedDay)}><Plus size={16} /> {selectedDay === today ? 'Add a task' : 'Plan a task'}</button>} />}
     {opened && <TaskDetail state={state} task={opened} onClose={() => setSelectedTask(null)} />}
   </>;

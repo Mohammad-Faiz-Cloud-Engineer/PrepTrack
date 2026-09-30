@@ -35,6 +35,7 @@ function More({ go, theme, setTheme }: { go: (view: View) => void; theme: ThemeM
 export default function App() {
   const [view, setView] = useState<View>('Today'); const [compose, setCompose] = useState<{ mode: 'today' | 'manual'; date?: string } | null>(null);
   const [theme, setTheme] = useState<ThemeMode>(loadTheme); const [systemDark, setSystemDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const goalCount = useAppStore(state => state.goals.length);
   const clockBehind = useAppStore(state => state.clockBehind); const backlogCount = useAppStore(state => state.tasks.filter(task => task.status === 'backlog').length);
   const reconcileNow = useAppStore(state => state.reconcileNow); const resumeClock = useAppStore(state => state.resumeClock);
   const resolved = resolveTheme(theme, systemDark);
@@ -83,7 +84,7 @@ export default function App() {
       <div className="view-container" key={view}>
         {view === 'Today' && <Today onAdd={() => openComposer()} onSettings={() => go('Settings')} onSyllabus={() => go('Syllabus')} />}
         {view === 'Plan' && <Plan onAdd={date => openComposer(date)} />}
-        {view === 'Progress' && <Progress />}
+        {view === 'Progress' && <Progress onSyllabus={() => go('Syllabus')} />}
         {view === 'Backlog' && <Backlog onAdd={() => setCompose({ mode: 'manual' })} />}
         {view === 'History' && <HistoryView />}
         {view === 'Syllabus' && <Syllabus />}
@@ -93,7 +94,7 @@ export default function App() {
         {view === 'More' && <><h1 className="more-title">More</h1><More go={go} theme={theme} setTheme={setTheme} /></>}
       </div>
     </main>
-    <button className="mobile-fab" onClick={() => openComposer()} aria-label="Add task"><Plus size={22} /></button>
+    <button className="mobile-fab" onClick={() => goalCount ? openComposer() : go('Syllabus')} aria-label={goalCount ? 'Add task' : 'Create a goal'}><Plus size={22} /></button>
     <nav className="bottom-nav" aria-label="Mobile navigation">{[
       ...navItems.slice(0, 4), { id: 'More', icon: MoreHorizontal },
     ].map(({ id, icon: Icon }) => <button key={id} className={view === id || (id === 'More' && ['History', 'Syllabus', 'Past study', 'Settings', 'How to use'].includes(view)) ? 'active' : ''} onClick={() => go(id as View)}><Icon size={19} /><span>{id === 'Backlog' ? 'Backlog' : id}</span></button>)}</nav>
