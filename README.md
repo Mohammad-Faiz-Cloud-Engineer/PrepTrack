@@ -1,6 +1,6 @@
 # PrepTrack
 
-[![Build and test](https://github.com/OWNER/REPOSITORY/actions/workflows/build-test.yml/badge.svg)](https://github.com/OWNER/REPOSITORY/actions/workflows/build-test.yml)
+[![Build and test](https://github.com/Mohammad-Faiz-Cloud-Engineer/PrepTrack/actions/workflows/build-test.yml/badge.svg)](https://github.com/Mohammad-Faiz-Cloud-Engineer/PrepTrack/actions/workflows/build-test.yml)
 
 PrepTrack is an offline-first preparation tracker. All syllabus, tasks and progress stay in this browser; there is no account or backend.
 
