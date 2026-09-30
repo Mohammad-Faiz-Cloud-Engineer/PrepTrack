@@ -23,7 +23,7 @@ function ScopeBars({ summary, types, accent, compact = false }: { summary: Retur
 
 export function Progress({ onSyllabus }: { onSyllabus: () => void }) {
   const state = useAppStore(); const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const toggle = (id: string) => setExpanded(value => { const next = new Set(value); next.has(id) ? next.delete(id) : next.add(id); return next; });
+  const toggle = (id: string) => setExpanded(value => { const next = new Set(value); if (next.has(id)) next.delete(id); else next.add(id); return next; });
   return <>
     <SectionHeading eyebrow="SEE YOUR MOMENTUM" title="Progress" description="Small, steady marks across the whole syllabus." />
     {!state.goals.length ? <div className="empty-state page-empty progress-empty"><h3>Your progress starts with a syllabus</h3><p>Add a goal and its topics to see a clear picture of what is done.</p><button className="button button-primary" onClick={onSyllabus}>Set up a goal</button></div> : <div className="goal-progress-list">{state.goals.map(goal => {

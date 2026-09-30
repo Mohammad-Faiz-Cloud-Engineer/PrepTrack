@@ -9,11 +9,12 @@ PrepTrack is an offline-first preparation tracker. All syllabus, tasks and progr
 ```sh
 npm install
 npm run dev
+npm run lint
 npm test
 npm run build
 ```
 
-To deploy, publish the generated `dist/` directory to any static HTTPS host with SPA fallback to `index.html`. The service worker caches the app shell for offline use after the first successful visit. Keep the site path at the host root or configure the host's base path before building.
+The GitHub Pages workflow deploys this repository under `/PrepTrack/`; set the Pages source to **GitHub Actions** in repository settings. For another static HTTPS host, publish `dist/` with SPA fallback to `index.html` and set `VITE_BASE_PATH` to its path (it defaults to `/`). The service worker caches the app shell for offline use after the first successful visit.
 
 ## Assumptions
 
