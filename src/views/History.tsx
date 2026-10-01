@@ -28,7 +28,9 @@ export function History({ onPastStudy }: { onPastStudy: () => void }) {
       <div className="history-rows">{items.map(event => {
         const goalName = state.goals.find(item => item.id === event.goalId)?.name ?? 'Removed goal';
         const subjectName = state.subjects.find(item => item.id === event.subjectId)?.name ?? 'Removed subject';
-        const chapterName = state.chapters.find(item => item.id === event.chapterId)?.name ?? 'Removed chapter';
+        const chapter = state.chapters.find(item => item.id === event.chapterId);
+        const sectionName = state.sections.find(item => item.id === chapter?.sectionId)?.name;
+        const chapterName = chapter ? `${sectionName ? `${sectionName} · ` : ''}${chapter.name}` : 'Removed chapter';
         const topicName = event.topicId ? state.topics.find(item => item.id === event.topicId)?.name : null;
         return <article className="history-row" key={event.id}><span className="history-check"><BookOpenCheck size={17} /></span><div className="history-row-copy"><div className="history-row-title"><span className={`type-chip type-${event.type.toLowerCase()}`}>{event.type}</span>{event.source === 'past' && <span className="logged-tag">Logged</span>}</div><strong>{chapterName}{topicName ? ` · ${topicName}` : ''}</strong><p>{goalName} <span>·</span> {subjectName}</p><div className="history-times">{event.task ? <><span>Created {formatIST(event.task.createdAt)}</span>{event.task.activatedAt !== null && <span>Started {formatIST(event.task.activatedAt)}</span>}<span>Completed {formatIST(event.at)}</span>{event.task.backlogAt !== null && <span>Backlog {formatIST(event.task.backlogAt)}</span>}</> : <span>Logged {formatIST(event.at)}</span>}</div></div></article>;
       })}</div></section>)}

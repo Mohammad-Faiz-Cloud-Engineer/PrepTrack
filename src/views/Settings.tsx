@@ -7,7 +7,7 @@ import { formatDateIST, istDateString } from '../lib/time';
 import { useAppStore } from '../store';
 import { SectionHeading } from '../components/shared';
 
-const emptyData = (): AppState => ({ schemaVersion: 1, goals: [], subjects: [], chapters: [], topics: [], tasks: [], progressRecords: {}, lastSeenAt: Date.now(), lastExportAt: null, lastUsedGoalId: null, lastUsedSubjectId: null, lastUsedChapterId: null });
+const emptyData = (): AppState => ({ schemaVersion: 1, goals: [], subjects: [], sections: [], chapters: [], completedChapterIds: [], topics: [], tasks: [], progressRecords: {}, lastSeenAt: Date.now(), lastExportAt: null, lastUsedGoalId: null, lastUsedSubjectId: null, lastUsedChapterId: null });
 
 export function Settings({ theme, setTheme }: { theme: ThemeMode; setTheme: (mode: ThemeMode) => void }) {
   const state = useAppStore(); const fileRef = useRef<HTMLInputElement>(null); const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null); const [importing, setImporting] = useState(false);
@@ -15,7 +15,7 @@ export function Settings({ theme, setTheme }: { theme: ThemeMode; setTheme: (mod
   const exportData = () => {
     const now = Date.now();
     const data: AppState = {
-      schemaVersion: state.schemaVersion, goals: state.goals, subjects: state.subjects, chapters: state.chapters, topics: state.topics,
+      schemaVersion: state.schemaVersion, goals: state.goals, subjects: state.subjects, sections: state.sections, chapters: state.chapters, completedChapterIds: state.completedChapterIds, topics: state.topics,
       tasks: state.tasks, progressRecords: state.progressRecords, lastSeenAt: state.lastSeenAt, lastExportAt: now,
       lastUsedGoalId: state.lastUsedGoalId, lastUsedSubjectId: state.lastUsedSubjectId, lastUsedChapterId: state.lastUsedChapterId,
     };

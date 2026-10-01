@@ -12,7 +12,7 @@ const base = (lastSeenAt = Date.parse('2026-03-10T12:00:00+05:30')): AppState =>
   schemaVersion: 1,
   goals: [{ id: 'g', name: 'GATE CS', colorId: 0, trackedTypes: ['Lecture', 'Practice', 'Revision'] }],
   subjects: [{ id: 's', goalId: 'g', name: 'OS', order: 0 }],
-  chapters: [{ id: 'c', subjectId: 's', name: 'Scheduling', order: 0 }, { id: 'empty', subjectId: 's', name: 'Memory', order: 1 }],
+  sections: [], chapters: [{ id: 'c', subjectId: 's', sectionId: null, name: 'Scheduling', order: 0 }, { id: 'empty', subjectId: 's', sectionId: null, name: 'Memory', order: 1 }], completedChapterIds: [],
   topics: [{ id: 't1', chapterId: 'c', name: 'RR', order: 0 }, { id: 't2', chapterId: 'c', name: 'FCFS', order: 1 }],
   tasks: [], progressRecords: {}, lastSeenAt, lastExportAt: null,
   lastUsedGoalId: null, lastUsedSubjectId: null, lastUsedChapterId: null,
@@ -137,6 +137,23 @@ describe('backup validation', () => {
   it('rejects malformed JSON shapes without throwing an implementation error', () => {
     expect(() => validateImport({ schemaVersion: 1, goals: [null], subjects: [], chapters: [], topics: [], tasks: [], progressRecords: {}, lastSeenAt: 0, lastExportAt: null })).toThrow(/invalid IDs/);
     expect(() => validateImport(null)).toThrow(/not a PrepTrack backup/);
+  });
+
+  it('validates section ownership and migrates older backups without sections', () => {
+    const withSection = base();
+    withSection.sections = [{ id: 'section', subjectId: 's', name: 'Calculus', order: 0 }];
+    withSection.chapters[0].sectionId = 'section';
+    withSection.completedChapterIds = ['c'];
+    expect(validateImport(withSection).completedChapterIds).toEqual(['c']);
+    withSection.subjects.push({ id: 's2', goalId: 'g', name: 'Physics', order: 1 });
+    withSection.chapters[0].subjectId = 's2';
+    expect(() => validateImport(withSection)).toThrow(/invalid chapter/);
+
+    const legacy = { ...base(), sections: undefined, completedChapterIds: undefined, chapters: [{ id: 'c', subjectId: 's', name: 'Scheduling', order: 0 }] };
+    const migrated = validateImport(legacy);
+    expect(migrated.sections).toEqual([]);
+    expect(migrated.completedChapterIds).toEqual([]);
+    expect(migrated.chapters[0].sectionId).toBeNull();
   });
 });
 

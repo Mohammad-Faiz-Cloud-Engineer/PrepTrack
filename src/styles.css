@@ -277,6 +277,11 @@ input[type="checkbox"] { accent-color: var(--brand); width: 15px; height: 15px; 
 .subject-row > strong, .chapter-row > span { min-width: 0; flex: 1; overflow-wrap: anywhere; font-size: 11px; }
 .chapter-row { padding-left: 10px; color: var(--muted); }
 .chapter-row > span { color: var(--text); font-size: 10px; }
+.chapter-row.chapter-completed > span { color: var(--muted); text-decoration: line-through; }
+.chapter-complete { min-height: 44px; display: inline-flex; align-items: center; gap: 4px; padding: 0 4px; color: var(--muted); font-size: 9px; font-weight: 700; white-space: nowrap; }
+.syllabus-section { margin: 5px 0 7px 10px; padding-left: 7px; border-left: 1px solid var(--line-strong); }
+.section-row { color: var(--brand-ink); }
+.section-row > strong { min-width: 0; flex: 1; overflow-wrap: anywhere; font-size: 10px; }
 .bulk-icon { font-size: 9px; font-weight: 700; letter-spacing: -.03em; }
 .syllabus-topics { margin-left: 36px; }
 .topic-row { min-height: 32px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }

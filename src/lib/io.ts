@@ -12,7 +12,9 @@ export function migrateState(value: unknown): AppState {
     };
   });
   return {
-    schemaVersion: 1, goals, subjects: Array.isArray(old.subjects) ? old.subjects : [], chapters: Array.isArray(old.chapters) ? old.chapters : [],
+    schemaVersion: 1, goals, subjects: Array.isArray(old.subjects) ? old.subjects : [], sections: Array.isArray(old.sections) ? old.sections : [],
+    chapters: Array.isArray(old.chapters) ? old.chapters.map(chapter => ({ ...chapter, sectionId: chapter.sectionId ?? null })) : [],
+    completedChapterIds: Array.isArray(old.completedChapterIds) ? old.completedChapterIds : [],
     topics: Array.isArray(old.topics) ? old.topics : [], tasks: Array.isArray(old.tasks) ? old.tasks : [], progressRecords: old.progressRecords ?? {},
     lastSeenAt: typeof old.lastSeenAt === 'number' ? old.lastSeenAt : Date.now(), lastExportAt: typeof old.lastExportAt === 'number' ? old.lastExportAt : null,
     lastUsedGoalId: old.lastUsedGoalId ?? null, lastUsedSubjectId: old.lastUsedSubjectId ?? null, lastUsedChapterId: old.lastUsedChapterId ?? null,
@@ -22,22 +24,26 @@ export function migrateState(value: unknown): AppState {
 export function validateImport(value: unknown): AppState {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('This file is not a PrepTrack backup.');
   const input = value as Partial<AppState>;
-  if (input.schemaVersion !== 1 || !Array.isArray(input.goals) || !Array.isArray(input.subjects) || !Array.isArray(input.chapters) || !Array.isArray(input.topics) || !Array.isArray(input.tasks) || !input.progressRecords || typeof input.progressRecords !== 'object' || Array.isArray(input.progressRecords)) throw new Error('Unsupported or incomplete PrepTrack backup.');
+  if (input.schemaVersion !== 1 || !Array.isArray(input.goals) || !Array.isArray(input.subjects) || (input.sections !== undefined && !Array.isArray(input.sections)) || !Array.isArray(input.chapters) || (input.completedChapterIds !== undefined && !Array.isArray(input.completedChapterIds)) || !Array.isArray(input.topics) || !Array.isArray(input.tasks) || !input.progressRecords || typeof input.progressRecords !== 'object' || Array.isArray(input.progressRecords)) throw new Error('Unsupported or incomplete PrepTrack backup.');
+  const sectionsList = input.sections ?? [];
   const ids = (items: { id: string }[]) => new Set(items.flatMap(item => item && typeof item.id === 'string' ? [item.id] : []));
   const unique = (items: { id: string }[]) => items.every(item => item && typeof item.id === 'string' && item.id.length > 0) && ids(items).size === items.length;
   const date = (value: unknown) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`)) && new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
   const timestamp = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= 8.64e15;
   const name = (value: unknown) => typeof value === 'string' && value.trim().length > 0;
-  if (!unique(input.goals) || !unique(input.subjects) || !unique(input.chapters) || !unique(input.topics) || !unique(input.tasks)) throw new Error('The backup contains duplicate or invalid IDs.');
+  if (!unique(input.goals) || !unique(input.subjects) || !unique(sectionsList) || !unique(input.chapters) || !unique(input.topics) || !unique(input.tasks)) throw new Error('The backup contains duplicate or invalid IDs.');
 
-  const allIds = [...input.goals, ...input.subjects, ...input.chapters, ...input.topics, ...input.tasks].map(item => item.id);
+  const allIds = [...input.goals, ...input.subjects, ...sectionsList, ...input.chapters, ...input.topics, ...input.tasks].map(item => item.id);
   if (new Set(allIds).size !== allIds.length) throw new Error('The backup reuses an ID across different items.');
-  const goalIds = ids(input.goals); const subjectIds = ids(input.subjects); const chapterIds = ids(input.chapters);
+  const goalIds = ids(input.goals); const subjectIds = ids(input.subjects); const sectionIds = ids(sectionsList); const chapterIds = ids(input.chapters);
   const subjects = new Map(input.subjects.map(item => [item.id, item])); const chapters = new Map(input.chapters.map(item => [item.id, item]));
+  const sections = new Map(sectionsList.map(item => [item.id, item]));
   const topics = new Map(input.topics.map(item => [item.id, item])); const tasks = new Map(input.tasks.map(item => [item.id, item]));
   if (input.goals.some((goal: Goal) => !name(goal.name) || !Number.isInteger(goal.colorId) || goal.colorId < 0 || goal.colorId > 7 || !Array.isArray(goal.trackedTypes) || !goal.trackedTypes.length || goal.trackedTypes.some(type => !TASK_TYPES.includes(type)) || new Set(goal.trackedTypes).size !== goal.trackedTypes.length)) throw new Error('The backup has an invalid goal.');
   if (input.subjects.some(item => !name(item.name) || !goalIds.has(item.goalId) || !Number.isInteger(item.order) || item.order < 0)) throw new Error('The backup has an invalid subject.');
-  if (input.chapters.some(item => !name(item.name) || !subjectIds.has(item.subjectId) || !Number.isInteger(item.order) || item.order < 0)) throw new Error('The backup has an invalid chapter.');
+  if (sectionsList.some(item => !name(item.name) || !subjectIds.has(item.subjectId) || !Number.isInteger(item.order) || item.order < 0)) throw new Error('The backup has an invalid section.');
+  if (input.chapters.some(item => !name(item.name) || !subjectIds.has(item.subjectId) || !Number.isInteger(item.order) || item.order < 0 || (item.sectionId != null && (!sectionIds.has(item.sectionId) || sections.get(item.sectionId)?.subjectId !== item.subjectId)))) throw new Error('The backup has an invalid chapter.');
+  if (input.completedChapterIds && (new Set(input.completedChapterIds).size !== input.completedChapterIds.length || input.completedChapterIds.some(id => typeof id !== 'string' || !chapterIds.has(id)))) throw new Error('The backup has invalid completed chapters.');
   if (input.topics.some(item => !name(item.name) || !chapterIds.has(item.chapterId) || !Number.isInteger(item.order) || item.order < 0)) throw new Error('The backup has an invalid topic.');
 
   const validTask = (task: Task) => {

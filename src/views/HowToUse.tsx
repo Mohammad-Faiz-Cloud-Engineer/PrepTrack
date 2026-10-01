@@ -2,7 +2,7 @@ import { ArrowRight, BookOpen, Clock3, Download, ListChecks, RotateCcw, Trending
 import { SectionHeading } from '../components/shared';
 
 const steps = [
-  { icon: BookOpen, title: 'Build your syllabus', description: 'Create a goal, then add its subjects, chapters and topics. In Syllabus, bulk paste chapters with topics indented beneath them.', action: 'Set up syllabus', view: 'Syllabus' as const },
+  { icon: BookOpen, title: 'Build your syllabus', description: 'Create a goal, add subjects, optional sections, chapters and topics. Mark finished chapters in Syllabus, or bulk paste chapters with topics indented beneath them.', action: 'Set up syllabus', view: 'Syllabus' as const },
   { icon: Clock3, title: 'Plan a study session', description: 'Add a Lecture, Practice or Revision task for today or one of the next seven days. Today’s tasks get a 24-hour timer; planned tasks start at midnight IST on their date.', action: 'Add a task', add: true },
   { icon: ListChecks, title: 'Study, then complete it', description: 'Your active sessions live in Today. Open a task for its notes and timestamps; mark it complete when you finish to record progress.', action: 'Open Today', view: 'Today' as const },
   { icon: TrendingUp, title: 'Track progress or log earlier study', description: 'Progress shows completion by goal, subject and topic. Use Past study to record work you did before using PrepTrack, with its original date.', action: 'Past study', view: 'Past study' as const },

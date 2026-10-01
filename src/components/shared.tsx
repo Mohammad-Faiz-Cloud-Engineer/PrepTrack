@@ -19,7 +19,9 @@ export function Modal({ title, onClose, children, sheet = false }: { title: stri
 }
 
 export function TaskPath({ state, task, compact = false }: { state: AppState; task: Task; compact?: boolean }) {
+  const sectionId = state.chapters.find(item => item.id === task.chapterId)?.sectionId;
   const names = [state.goals.find(item => item.id === task.goalId)?.name, state.subjects.find(item => item.id === task.subjectId)?.name,
+    sectionId ? state.sections.find(item => item.id === sectionId)?.name : null,
     state.chapters.find(item => item.id === task.chapterId)?.name, task.topicId ? state.topics.find(item => item.id === task.topicId)?.name : null].filter(Boolean);
   return <span className={`task-path ${compact ? 'compact' : ''}`}>{names.map((name, index) => <span key={`${name}-${index}`}>{index > 0 && <ChevronRight size={12} aria-hidden="true" />}{name}</span>)}</span>;
 }

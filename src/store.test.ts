@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AppState } from './types';
-import { DAY_MS } from './lib/time';
+import { DAY_MS, istDateString } from './lib/time';
 import { validateImport } from './lib/io';
 
 describe('store task flows', () => {
@@ -16,7 +16,7 @@ describe('store task flows', () => {
     const now = Date.parse('2026-03-10T10:00:00+05:30');
     const data: AppState = {
       schemaVersion: 1, goals: [{ id: 'g', name: 'GATE', colorId: 0, trackedTypes: ['Lecture', 'Practice', 'Revision'] }],
-      subjects: [{ id: 's', goalId: 'g', name: 'CS', order: 0 }], chapters: [{ id: 'c', subjectId: 's', name: 'Scheduling', order: 0 }],
+      subjects: [{ id: 's', goalId: 'g', name: 'CS', order: 0 }], sections: [], chapters: [{ id: 'c', subjectId: 's', sectionId: null, name: 'Scheduling', order: 0 }], completedChapterIds: [],
       topics: [{ id: 't', chapterId: 'c', name: 'Round Robin', order: 0 }], tasks: [], progressRecords: {}, lastSeenAt: now,
       lastExportAt: null, lastUsedGoalId: null, lastUsedSubjectId: null, lastUsedChapterId: null,
     };
@@ -55,10 +55,10 @@ describe('store task flows', () => {
     const { useAppStore } = await import('./store');
     const now = Date.parse('2026-03-10T10:00:00+05:30');
     useAppStore.getState().replaceData({
-      schemaVersion: 1,
+      schemaVersion: 1, sections: [], completedChapterIds: [],
       goals: [{ id: 'g', name: 'GATE', colorId: 0, trackedTypes: ['Practice'] }],
       subjects: [{ id: 's', goalId: 'g', name: 'CS', order: 0 }],
-      chapters: [{ id: 'c', subjectId: 's', name: 'Scheduling', order: 0 }], topics: [],
+      chapters: [{ id: 'c', subjectId: 's', sectionId: null, name: 'Scheduling', order: 0 }], topics: [],
       tasks: [{
         id: 'expired', goalId: 'g', subjectId: 's', chapterId: 'c', topicId: null, type: 'Practice', status: 'backlog',
         createdAt: Date.parse('2026-03-08T00:00:00+05:30'), scheduledFor: '2026-03-08',
@@ -73,5 +73,35 @@ describe('store task flows', () => {
 
     const todayPlan = useAppStore.getState().tasks.filter(task => task.scheduledFor === '2026-03-10' && task.status === 'active');
     expect(todayPlan).toHaveLength(1);
+  });
+
+  it('groups chapters into sections, clears completion when topics are added, and removes section descendants', async () => {
+    const { useAppStore } = await import('./store');
+    useAppStore.getState().replaceData({
+      schemaVersion: 1, goals: [{ id: 'g', name: 'Exam', colorId: 0, trackedTypes: ['Lecture'] }],
+      subjects: [{ id: 's', goalId: 'g', name: 'Maths', order: 0 }], sections: [], completedChapterIds: [],
+      chapters: [], topics: [], tasks: [], progressRecords: {}, lastSeenAt: 1, lastExportAt: null,
+      lastUsedGoalId: null, lastUsedSubjectId: null, lastUsedChapterId: null,
+    });
+    useAppStore.getState().addSection('s', 'Calculus');
+    const section = useAppStore.getState().sections[0];
+    useAppStore.getState().addChapter('s', 'Limits', section.id);
+    const chapter = useAppStore.getState().chapters[0];
+    useAppStore.getState().addTopic(chapter.id, 'Continuity');
+    const topic = useAppStore.getState().topics[0];
+    useAppStore.getState().addTask({ goalId: 'g', subjectId: 's', chapterId: chapter.id, topicId: topic.id, type: 'Lecture', scheduledFor: istDateString(Date.now()) });
+    const taskId = useAppStore.getState().tasks[0].id;
+    useAppStore.getState().completeTask(taskId);
+    useAppStore.getState().setChapterCompleted(chapter.id, true);
+    expect(useAppStore.getState().completedChapterIds).toContain(chapter.id);
+    useAppStore.getState().addTopic(chapter.id, 'Derivatives');
+    expect(useAppStore.getState().completedChapterIds).not.toContain(chapter.id);
+    useAppStore.getState().setChapterCompleted(chapter.id, true);
+    useAppStore.getState().deleteEntity('section', section.id);
+    expect(useAppStore.getState().chapters).toHaveLength(0);
+    expect(useAppStore.getState().topics).toHaveLength(0);
+    expect(useAppStore.getState().tasks).toHaveLength(0);
+    expect(Object.keys(useAppStore.getState().progressRecords)).toHaveLength(0);
+    expect(useAppStore.getState().completedChapterIds).toHaveLength(0);
   });
 });

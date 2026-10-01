@@ -19,6 +19,7 @@ The GitHub Pages workflow deploys this repository under `/PrepTrack/`; set the P
 ## Assumptions
 
 - Goals must track at least one of Lecture, Practice or Revision; the last selected type cannot be switched off.
+- Subjects can group chapters into sections. The Syllabus completion tick is a manual marker; adding a topic clears it. Study progress is still tracked separately by study type.
 - A manual backlog item's overdue clock starts when it is added. A past study log is timestamped at midnight IST on the selected date because the date picker has no time field.
 - A chapter task completes all topics currently in that chapter. Progress for each task is tagged with its task ID, so undo removes only records that task created; an already-done past record remains intact.
 - If a chapter later gains topics, older chapter-level progress remains in History but no longer counts toward current progress.
