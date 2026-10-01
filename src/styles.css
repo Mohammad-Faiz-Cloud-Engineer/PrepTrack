@@ -59,7 +59,7 @@
   --shadow-modal: 0 24px 80px rgba(0, 0, 0, .48);
 }
 
-* { box-sizing: border-box; scrollbar-width: none; }
+* { box-sizing: border-box; scrollbar-width: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 *::-webkit-scrollbar { display: none; }
 html { min-width: 320px; min-height: 100%; background: var(--page); }
 body { margin: 0; min-width: 320px; min-height: 100dvh; background: var(--page); color: var(--text); font-size: 14px; }
