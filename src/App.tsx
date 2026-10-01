@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Archive, BookOpen, CalendarDays, CheckCircle2, CircleHelp, Clock3, History, LayoutDashboard, Moon, MoreHorizontal, Plus, Settings as SettingsIcon, Sun, SunMoon } from 'lucide-react';
+import { Archive, BookOpen, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Clock3, History, LayoutDashboard, Moon, MoreHorizontal, Plus, Settings as SettingsIcon, Sun, SunMoon } from 'lucide-react';
 import { useAppStore } from './store';
 import { resolveTheme, THEME_KEY } from './lib/theme';
 import type { ThemeMode } from './lib/theme';
@@ -34,6 +34,7 @@ function More({ go, theme, setTheme }: { go: (view: View) => void; theme: ThemeM
 
 export default function App() {
   const [view, setView] = useState<View>('Today'); const [compose, setCompose] = useState<{ mode: 'today' | 'manual'; date?: string } | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [theme, setTheme] = useState<ThemeMode>(loadTheme); const [systemDark, setSystemDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches);
   const goalCount = useAppStore(state => state.goals.length);
   const clockBehind = useAppStore(state => state.clockBehind); const backlogCount = useAppStore(state => state.tasks.filter(task => task.status === 'backlog').length);
@@ -74,11 +75,11 @@ export default function App() {
   const go = (next: View) => setView(next);
   const themeButton = <button className="theme-toggle" onClick={cycleTheme} aria-label={`Theme: ${theme}. Change theme`} title={`Theme: ${theme}`}><ThemeIcon size={18} /><span>{theme[0].toUpperCase() + theme.slice(1)}</span></button>;
   return <div className="app-shell">
-    <aside className="sidebar"><button className="brand-lockup" onClick={() => go('Today')}><span className="brand-mark"><CheckCircle2 size={20} /></span><span>Prep<span>Track</span></span></button>
-      <nav className="side-nav" aria-label="Main navigation">{navItems.map(({ id, icon: Icon }) => <button key={id} className={`nav-link ${view === id ? 'active' : ''}`} onClick={() => go(id)}><Icon size={18} /><span>{id}</span>{id === 'Backlog' && <small>{backlogCount || ''}</small>}</button>)}</nav>
-      <div className="sidebar-bottom"><button className="new-task-side" onClick={() => openComposer()}><Plus size={17} /> New task <kbd>N</kbd></button>{themeButton}<div className="local-note"><span className="local-dot" />Saved on this device</div></div>
+    <aside id="desktop-sidebar" className={`sidebar ${sidebarOpen ? '' : 'sidebar-collapsed'}`}><div className="sidebar-head"><button className="brand-lockup" aria-label="PrepTrack home" onClick={() => go('Today')}><span className="brand-mark"><CheckCircle2 size={20} /></span><span>Prep<span>Track</span></span></button><button type="button" className="sidebar-toggle icon-button" aria-label={`${sidebarOpen ? 'Close' : 'Open'} navigation panel`} aria-expanded={sidebarOpen} aria-controls="sidebar-navigation" title={`${sidebarOpen ? 'Close' : 'Open'} navigation panel`} onClick={() => setSidebarOpen(open => !open)}>{sidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}</button></div>
+      <nav id="sidebar-navigation" className="side-nav" aria-label="Main navigation">{navItems.map(({ id, icon: Icon }) => <button key={id} className={`nav-link ${view === id ? 'active' : ''}`} aria-label={id === 'Backlog' ? `${id}, ${backlogCount} tasks` : id} title={!sidebarOpen ? id : undefined} onClick={() => go(id)}><Icon size={18} /><span>{id}</span>{id === 'Backlog' && <small>{backlogCount || ''}</small>}</button>)}</nav>
+      <div className="sidebar-bottom"><button className="new-task-side" aria-label="New task" title={!sidebarOpen ? 'New task' : undefined} onClick={() => openComposer()}><Plus size={17} /><span>New task</span><kbd>N</kbd></button>{themeButton}<div className="local-note"><span className="local-dot" /><span className="local-note-text">Saved on this device</span></div></div>
     </aside>
-    <main className="main-area">
+    <main className={`main-area ${sidebarOpen ? '' : 'sidebar-collapsed'}`}>
       <div className="desktop-topline"><span className="breadcrumb">PrepTrack <span>/</span> {view}</span><div className="topline-actions">{themeButton}<button className="button button-primary button-small" onClick={() => openComposer()}><Plus size={15} /> New task</button></div></div>
       {clockBehind && <div className="global-clock-notice"><Clock3 size={17} /><span>Your device clock is behind the last time PrepTrack ran. Automatic updates are paused.</span><button onClick={() => resumeClock()}>Resume anyway</button></div>}
       <div className="view-container" key={view}>
