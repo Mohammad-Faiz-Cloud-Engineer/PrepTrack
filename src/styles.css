@@ -430,6 +430,8 @@ input[type="checkbox"] { accent-color: var(--brand); width: 15px; height: 15px; 
   .breadcrumb span { padding: 0 6px; color: var(--faint); }
   .topline-actions { display: flex; align-items: center; gap: 9px; }
   .topline-actions .theme-toggle { min-height: 34px; }
+  .topline-actions .button-small { min-height: 34px; gap: 6px; padding: 0 10px; font-size: 10px; }
+  .topline-actions .button-small svg { width: 14px; height: 14px; }
   .view-container { width: min(100% - 60px, 1000px); padding: 34px 0 50px; }
   .desktop-add { display: inline-flex; }
   .task-card { padding: 17px 18px; }
