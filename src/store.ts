@@ -108,7 +108,7 @@ export const useAppStore = create<Store>()(persist((set) => ({
     tasks: state.tasks.map(task => task.id === id && task.status === 'completed' ? { ...task, status: task.activatedAt !== null ? 'active' : 'scheduled', completedAt: null } : task),
     progressRecords: removeTaskRecords(state.progressRecords, id),
   })),
-  moveBacklogToToday: (id, now = Date.now()) => set(state => ({ tasks: state.tasks.map(task => task.id === id && task.status === 'backlog' ? { ...task, status: 'active', fromBacklog: true, activatedAt: now, deadlineAt: now + DAY_MS } : task) })),
+  moveBacklogToToday: (id, now = Date.now()) => set(state => ({ tasks: state.tasks.map(task => task.id === id && task.status === 'backlog' ? { ...task, status: 'active', scheduledFor: istDateString(now), fromBacklog: true, activatedAt: now, deadlineAt: now + DAY_MS } : task) })),
   deleteTask: id => set(state => ({ tasks: state.tasks.filter(task => task.id !== id), progressRecords: removeTaskRecords(state.progressRecords, id) })),
   setPastProgress: (unitIds, types, date, checked) => set(state => {
     const progressRecords = updatePastRecords(state.progressRecords, unitIds, types, date, checked, Date.now());

@@ -50,4 +50,28 @@ describe('store task flows', () => {
     const { useAppStore } = await import('./store');
     expect(() => useAppStore.getState().addTask({ goalId: 'g', subjectId: 'missing', chapterId: 'c', topicId: null, type: 'Lecture', scheduledFor: '2026-03-10' }, Date.parse('2026-03-10T10:00:00+05:30'))).toThrow(/valid goal/);
   });
+
+  it('reschedules an expired planned task when returning it to today', async () => {
+    const { useAppStore } = await import('./store');
+    const now = Date.parse('2026-03-10T10:00:00+05:30');
+    useAppStore.getState().replaceData({
+      schemaVersion: 1,
+      goals: [{ id: 'g', name: 'GATE', colorId: 0, trackedTypes: ['Practice'] }],
+      subjects: [{ id: 's', goalId: 'g', name: 'CS', order: 0 }],
+      chapters: [{ id: 'c', subjectId: 's', name: 'Scheduling', order: 0 }], topics: [],
+      tasks: [{
+        id: 'expired', goalId: 'g', subjectId: 's', chapterId: 'c', topicId: null, type: 'Practice', status: 'backlog',
+        createdAt: Date.parse('2026-03-08T00:00:00+05:30'), scheduledFor: '2026-03-08',
+        activatedAt: Date.parse('2026-03-08T00:00:00+05:30'), deadlineAt: Date.parse('2026-03-09T00:00:00+05:30'),
+        completedAt: null, backlogAt: Date.parse('2026-03-09T00:00:00+05:30'), backlogSource: 'auto', fromBacklog: false,
+      }],
+      progressRecords: {}, lastSeenAt: now, lastExportAt: null,
+      lastUsedGoalId: null, lastUsedSubjectId: null, lastUsedChapterId: null,
+    });
+
+    useAppStore.getState().moveBacklogToToday('expired', now);
+
+    const todayPlan = useAppStore.getState().tasks.filter(task => task.scheduledFor === '2026-03-10' && task.status === 'active');
+    expect(todayPlan).toHaveLength(1);
+  });
 });
