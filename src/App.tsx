@@ -66,7 +66,7 @@ export default function App() {
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
       if (event.key.toLowerCase() !== 'n' || event.ctrlKey || event.metaKey || event.altKey || /INPUT|TEXTAREA|SELECT/.test((event.target as HTMLElement).tagName) || (event.target as HTMLElement).isContentEditable) return;
-      if (document.querySelector('[role="dialog"]')) return;
+      if (document.querySelector('dialog[open], [role="dialog"]')) return;
       event.preventDefault(); openComposer();
     };
     window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key);

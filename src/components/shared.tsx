@@ -6,29 +6,16 @@ import { formatDateIST, formatIST } from '../lib/time';
 const TASK_ICONS: Record<TaskType, string> = { Lecture: 'L', Practice: 'P', Revision: 'R' };
 
 export function Modal({ title, onClose, children, sheet = false }: { title: string; onClose: () => void; children: React.ReactNode; sheet?: boolean }) {
-  const panel = useRef<HTMLElement>(null); const closeRef = useRef(onClose);
-  useEffect(() => { closeRef.current = onClose; }, [onClose]);
+  const panel = useRef<HTMLDialogElement>(null);
   useEffect(() => {
-    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const focusable = () => [...(panel.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? [])];
-    if (!panel.current?.contains(document.activeElement)) (panel.current?.querySelector<HTMLElement>('[autofocus]') ?? focusable()[0])?.focus();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { closeRef.current(); return; }
-      if (event.key !== 'Tab') return;
-      const items = focusable(); if (!items.length) return;
-      const first = items[0]; const last = items[items.length - 1];
-      if (event.shiftKey && (document.activeElement === first || !panel.current?.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && (document.activeElement === last || !panel.current?.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => { window.removeEventListener('keydown', onKeyDown); previous?.focus(); };
+    const dialog = panel.current;
+    dialog?.showModal();
+    return () => dialog?.close();
   }, []);
-  return <div className={`modal-backdrop ${sheet ? 'sheet-backdrop' : ''}`} onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
-    <section className={`modal-panel ${sheet ? 'bottom-sheet' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
+  return <dialog ref={panel} className={`modal-panel ${sheet ? 'bottom-sheet' : ''}`} aria-label={title} onCancel={event => { event.preventDefault(); onClose(); }} onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
       <header className="modal-head"><h2>{title}</h2><button className="icon-button" aria-label="Close" onClick={onClose}><X size={19} /></button></header>
       {children}
-    </section>
-  </div>;
+  </dialog>;
 }
 
 export function TaskPath({ state, task, compact = false }: { state: AppState; task: Task; compact?: boolean }) {
